@@ -20,10 +20,16 @@ class Api::V1::UsersController < ApplicationController
       when "google" then ::Providers::Google.get_data(value)
       end
     end
-    user = User.where(email: @data["email"], facebook_id: @data["id"]).first_or_create!(password: SecureRandom.uuid)
-    response.headers["Auth-token"] = user&.generate_token
-    
-    render json: {user: user}
+    user = User.where(email: @data["email"]).first_or_create!(password: SecureRandom.uuid)
+    @provider = Provider.where(user_id: user["id"]).first_or_create!(provider: sn_params.keys.join(''), uid: @data["user_id"] || @data["id"])
+
+    if @provider.save
+      response.headers["Auth-token"] = user&.generate_token  
+
+      render json: {user: user}
+    else
+      render  json: { errors: user.errors }, status: 400
+    end
   end
 
   def my_profile
@@ -37,6 +43,10 @@ class Api::V1::UsersController < ApplicationController
   end
 
   def user_params
-    params.require(:user).permit(:username, :email, :facebook_id, :password, :password_confirmation)
+    params.require(:user).permit(:username, :email, :password, :password_confirmation)
+  end
+
+  def provider_params
+    params.permit(:provider, :uid)
   end
 end

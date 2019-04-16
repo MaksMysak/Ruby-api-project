@@ -12,7 +12,6 @@ module Providers
   
       response = ::Net::HTTP.get_response(uri)
       data = JSON.parse(response.body)
-      pp data
     end
   end
 end
